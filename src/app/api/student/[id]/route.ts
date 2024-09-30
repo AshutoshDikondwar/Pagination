@@ -9,23 +9,21 @@ export async function DELETE(request: Request) {
         if (!id) {
             return NextResponse.json({ error: 'Id is required' }, { status: 400 });
         }
+        const query = `delete from students where student_id = ?`;
 
-        return new Promise((resolve) => {
-            const query = `delete from students where student_id = ?`;
+        const results: ResultSetHeader = await new Promise((resolve, reject) => {
 
             db.query(query, [id], (err, results: ResultSetHeader) => {
                 if (err) {
                     console.error('Error while deleting:', err);
-                    return resolve(NextResponse.json({ error: 'Failed to delete data' }, { status: 500 }));
+                    return reject(err);
                 }
-
-                if (results.affectedRows > 0) {
-                    return resolve(NextResponse.json({ message: 'Data deleted successfully' }, { status: 200 }));
-                } else {
-                    return resolve(NextResponse.json({ error: 'Student not found' }, { status: 404 }));
-                }
+                return resolve(results);
             });
         });
+        if (results.affectedRows == 0) {
+            return NextResponse.json({ error: "No student found with the given id" }, { status: 404 });
+        }
     } catch (error) {
         console.error('Unexpected error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -47,11 +45,11 @@ export async function PUT(request: Request) {
             }
             resolve(results);
         })
-       
+
     })
-    if(results.affectedRows===0){
-        return NextResponse.json({error:"No student found with the given id"},{status:404});
+    if (results.affectedRows === 0) {
+        return NextResponse.json({ error: "No student found with the given id" }, { status: 404 });
     }
-    return NextResponse.json({message:"Student added successfully"},{status:200})
+    return NextResponse.json({ message: "Student added successfully" }, { status: 200 })
 
 }
