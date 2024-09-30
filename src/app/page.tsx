@@ -11,11 +11,16 @@ export default function Home() {
     setRefreshKey((prevKey) => prevKey + 1);
   };
 
+
+  
+
   return (
     <div>
 
       <AddStudent onStudentAdded={handleStudentAdded} />
-      <GetStudents refreshKey={refreshKey} />
+      <GetStudents  
+      
+         refreshKey={refreshKey} />
     </div>
   );
 }

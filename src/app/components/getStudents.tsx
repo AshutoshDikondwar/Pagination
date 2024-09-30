@@ -22,7 +22,6 @@ interface GetStudentsProps {
 }
 
 const GetStudents = ({ refreshKey }: GetStudentsProps) => {
-
     const [students, setStudents] = useState<Student[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
@@ -36,6 +35,22 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
 
     const [deleteStudentId, setDeleteStudentId] = useState<number | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    const [startPage, setStartPage] = useState(1);
+
+    const handleNext = () => {
+        if (startPage + 5 <= totalPages) {
+            setStartPage(startPage + 5);
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePrev = () => {
+        if (startPage > 1) {
+            setStartPage(startPage - 5);
+        }
+        handlePageChange(currentPage - 1);
+    };
 
     const fetchStudents = async (page: number = 1) => {
         try {
@@ -63,7 +78,12 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
     };
 
     const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setPageSize(Number(e.target.value));
+        const value = e.target.value;
+        if (value === "all") {
+            setPageSize(Number.MAX_SAFE_INTEGER);
+        } else {
+            setPageSize(Number(value));
+        }
         setCurrentPage(1);
     };
 
@@ -137,13 +157,14 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                 />
 
                 <select
-                    value={pageSize}
+                     value={pageSize === Number.MAX_SAFE_INTEGER ? "all" : pageSize}
                     onChange={handlePageSizeChange}
                     className="border rounded px-3 py-2 ml-2"
                 >
                     <option value={3}>3</option>
                     <option value={5}>5</option>
                     <option value={10}>10</option>
+                    <option value="all">All</option>
                 </select>
             </div>
 
@@ -181,23 +202,57 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                 </tbody>
             </table>
 
-            <div className="mt-4 flex justify-between items-center">
+            <div className="mt-4 flex justify-center items-center">
                 <button
-                    onClick={() => handlePageChange(currentPage - 1)}
+                    onClick={handlePrev}
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 text-white font-bold rounded ${currentPage === 1 ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`px-4 py-2 text-white font-bold rounded ${currentPage === 1
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                 >
                     Prev
                 </button>
-                <span className="font-medium">{currentPage} / {totalPages}</span>
+
+                {(() => {
+                    const pageButtons = [];
+                    const endPage = Math.min(startPage + 4, totalPages);
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        pageButtons.push(
+                            <button
+                                key={i}
+                                onClick={() => handlePageChange(i)}
+                                className={`px-3 py-1 mx-1 rounded ${currentPage === i
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-200 hover:bg-gray-300'
+                                    }`}
+                            >
+                                {i}
+                            </button>
+                        );
+                    }
+
+
+                    if (endPage < totalPages) {
+                        pageButtons.push(<span key="ellipsis" className="mx-1">...</span>);
+                    }
+
+                    return pageButtons;
+                })()}
+
                 <button
-                    onClick={() => handlePageChange(currentPage + 1)}
+                    onClick={handleNext}
                     disabled={currentPage === totalPages}
-                    className={`px-4 py-2 text-white font-bold rounded ${currentPage === totalPages ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    className={`px-4 py-2 text-white font-bold rounded ${currentPage === totalPages
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                 >
                     Next
                 </button>
             </div>
+
 
             {editingStudent && (
                 <div className="mt-8">
