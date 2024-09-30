@@ -8,12 +8,12 @@ import mysql, { ResultSetHeader } from 'mysql2';
 export async function DELETE(request: Request) {
     try {
         const url = new URL(request.url);
-        let id = url.pathname.split('/').pop();
+        const id = url.pathname.split('/').pop();
         if (!id) {
             return NextResponse.json({ error: 'Id is required' }, { status: 400 });
         }
 
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
             const query = `delete from students where student_id = ?`;
 
             db.query(query, [id], (err, results: ResultSetHeader) => {

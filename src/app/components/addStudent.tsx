@@ -30,14 +30,13 @@ const AddStudent = ({ onStudentAdded }: AddStudentProps) => {
             if (!response.ok) {
                 throw new Error('Failed to add student');
             }
-            const data = await response.json();
             alert("Student added successfully");
             onStudentAdded();
             setName('')
             setAddress('');
 
-        } catch (err: any) {
-            alert(err.message || 'An error occurred while adding the student');
+        } catch (err) {
+            alert(err || 'An error occurred while adding the student');
         }
     }
 

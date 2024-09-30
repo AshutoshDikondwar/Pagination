@@ -41,14 +41,14 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
             setStudents(result.data);
             setTotalPages(result.total_pages);
             setCurrentPage(result.page);
-        } catch (err: any) {
+        } catch (err) {
             alert('Error getting Students');
         }
     };
 
     useEffect(() => {
         fetchStudents(currentPage);
-    }, [currentPage, refreshKey, nameSearch, addressSearch]);
+    }, [currentPage, refreshKey, nameSearch, addressSearch, fetchStudents]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage > 0 && newPage <= totalPages) {
@@ -92,8 +92,8 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
             alert("Student updated successfully");
             setEditingStudent(null); 
             fetchStudents(currentPage); 
-        } catch (err: any) {
-            alert(err.message || 'An error occurred while updating the student');
+        } catch (err) {
+            alert(err || 'An error occurred while updating the student');
         }
     };
 
