@@ -2,12 +2,6 @@ import { NextResponse } from 'next/server';
 import db from '../../config/db';
 import mysql, { ResultSetHeader } from 'mysql2';
 
-interface Student {
-    student_id: number;
-    name: string;
-    address: string;
-}
-
 export async function POST(request: Request) {
     const { name, address } = await request.json();
 
