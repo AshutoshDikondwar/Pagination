@@ -11,16 +11,18 @@ interface Student {
 export async function POST(request: Request) {
     const { name, address } = await request.json();
 
-    return new Promise((resolve) => {
+    const results: ResultSetHeader = await new Promise((resolve, reject) => {
         const query = 'insert into students(name,address) values(?,?)';
         db.query(query, [name, address], (err, results: ResultSetHeader) => {
             if (err) {
                 console.error('Error inserting data:', err);
-                return resolve(NextResponse.json({ error: 'Failed to insert data' }, { status: 500 }))
+                return reject(err)
             }
             console.log('Data inserted', results);
-            return resolve(NextResponse.json({ message: 'Student added successfully', id: results.insertId }, { status: 201 }))
+            return resolve(results);
         })
+        return NextResponse.json({ message: 'Student added successfully', id: results.insertId }, { status: 201 })
+
 
     })
 }
@@ -103,30 +105,4 @@ export async function GET(request: Request) {
             })
         })
     })
-}
-
-
-
-export async function PUT(request: Request) {
-    const url = new URL(request.url);
-    const id = url.pathname.split('/').pop();
-    const { name, address } = await request.json();
-
-    return new Promise((resolve) => {
-        const query = 'update students set name = ?, address = ? WHERE id = ?';
-        db.query(query, [name, address, id], (err: mysql.QueryError | null, results: ResultSetHeader) => {
-
-            if (err) {
-                console.error('Error updating data:', err);
-                return resolve(NextResponse.json({ error: 'Failed to update data' }, { status: 500 }));
-            }
-            if (results.affectedRows === 0) {
-                return resolve(NextResponse.json({ error: 'No student found with the given id' }, { status: 404 }));
-            }
-            console.log('Data updated', results);
-            return resolve(NextResponse.json({ message: 'Student updated successfully' }, { status: 200 }));
-
-        })
-    })
-
 }
