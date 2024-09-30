@@ -37,9 +37,9 @@ export async function GET(request: Request) {
 
     const offset = (Number(page) - 1) * Number(limit);
 
-    return new Promise((resolve) => {
+    const students = await new Promise((resolve, reject) => {
         let query = 'select * from students';
-        const queryParams: Array<string | number> = [] = [];
+        const queryParams: Array<string | number> = [];
 
         if (name || address) {
             query += ' WHERE';
@@ -59,50 +59,55 @@ export async function GET(request: Request) {
 
         query += ' limit ? offset ?';
         queryParams.push(Number(limit), offset);
+
         db.query(query, queryParams, (err, results) => {
             if (err) {
                 console.error('Error fetching data:', err);
-                return resolve(NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 }));
+                return reject(err);
             }
-            const students = results as Student[];
-            let total_query = 'select count(student_id) as total from students';
-            const countParams: Array<string | number> = [] = [];
+            resolve(results);
+        });
+    });
 
-            if (name || address) {
-                total_query += ' WHERE';
-                const countConditions: string[] = [];
+    const totalStudents = await new Promise<number>((resolve, reject) => {
+        let totalQuery = 'select count(student_id) as total from students';
+        const countParams: Array<string | number> = [];
 
-                if (name) {
-                    countConditions.push('name LIKE ?');
-                    countParams.push(`%${name}%`);
-                }
+        if (name || address) {
+            totalQuery += ' WHERE';
+            const countConditions: string[] = [];
 
-                if (address) {
-                    countConditions.push('address LIKE ?');
-                    countParams.push(`%${address}%`);
-                }
-
-                total_query += ' ' + countConditions.join(' OR ');
+            if (name) {
+                countConditions.push('name LIKE ?');
+                countParams.push(`%${name}%`);
             }
 
-            db.query(total_query, countParams, (count_err: mysql.QueryError | null, count_result) => {
-                if (count_err) {
-                    console.error('Error fetching count:', count_err);
-                    return resolve(NextResponse.json({ error: 'Failed to fetch total count' }, { status: 500 }));
-                }
-                const cResult = count_result as { total: number }[];
-                const total_students = cResult[0].total;
-                const total_pages = Math.ceil(total_students / Number(limit));
-                return resolve(
-                    NextResponse.json({
-                        data: students,
-                        total: total_students,
-                        page: Number(page),
-                        limit: Number(limit),
-                        total_pages
-                    })
-                );
-            })
-        })
-    })
+            if (address) {
+                countConditions.push('address LIKE ?');
+                countParams.push(`%${address}%`);
+            }
+
+            totalQuery += ' ' + countConditions.join(' OR ');
+        }
+
+        db.query(totalQuery, countParams, (countErr: mysql.QueryError | null, countResult) => {
+            if (countErr) {
+                console.error('Error fetching count:', countErr);
+                return reject(countErr);
+            }
+            const cResult = countResult as { total: number }[];
+            resolve(cResult[0].total);
+        });
+    });
+
+    const totalPages = Math.ceil(totalStudents / Number(limit));
+
+    return NextResponse.json({
+        data: students,
+        total: totalStudents,
+        page: Number(page),
+        limit: Number(limit),
+        total_pages: totalPages,
+    });
+
 }
