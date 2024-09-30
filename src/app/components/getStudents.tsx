@@ -42,13 +42,13 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
             setTotalPages(result.total_pages);
             setCurrentPage(result.page);
         } catch (err) {
-            alert('Error getting Students');
+            alert(err||'Error getting Students');
         }
     };
 
     useEffect(() => {
         fetchStudents(currentPage);
-    }, [currentPage, refreshKey, nameSearch, addressSearch, fetchStudents]);
+    }, [currentPage, refreshKey, nameSearch, addressSearch]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage > 0 && newPage <= totalPages) {
@@ -62,8 +62,11 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                 method: "DELETE",
             });
             fetchStudents(currentPage);
+            if(response.ok){
+                alert("Deleted successfully")
+            }
         } catch (err) {
-            console.log("Error in deleting data");
+            console.log(err ||"Error in deleting data");
         }
     };
 

@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import db from '../../config/db';
 import mysql, { ResultSetHeader } from 'mysql2';
 
+interface Student {
+    student_id: number;
+    name: string;
+    address: string;
+}
+
 export async function POST(request: Request) {
     const { name, address } = await request.json();
 
@@ -31,7 +37,7 @@ export async function GET(request: Request) {
 
     return new Promise((resolve) => {
         let query = 'select * from students';
-        const queryParams: any[] = [];
+        const queryParams: Array<string | number> = [] = [];
 
         if (name || address) {
             query += ' WHERE';
@@ -51,13 +57,14 @@ export async function GET(request: Request) {
 
         query += ' limit ? offset ?';
         queryParams.push(Number(limit), offset);
-        db.query(query, queryParams, (err, results: any[]) => {
+        db.query(query, queryParams, (err, results) => {
             if (err) {
                 console.error('Error fetching data:', err);
                 return resolve(NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 }));
             }
+            const students = results as Student[];
             let total_query = 'select count(student_id) as total from students';
-            const countParams: any[] = [];
+            const countParams: Array<string | number> = [] = [];
 
             if (name || address) {
                 total_query += ' WHERE';
@@ -76,16 +83,17 @@ export async function GET(request: Request) {
                 total_query += ' ' + countConditions.join(' OR ');
             }
 
-            db.query(total_query, countParams, (count_err: mysql.QueryError | null, count_result: any[]) => {
+            db.query(total_query, countParams, (count_err: mysql.QueryError | null, count_result) => {
                 if (count_err) {
                     console.error('Error fetching count:', count_err);
                     return resolve(NextResponse.json({ error: 'Failed to fetch total count' }, { status: 500 }));
                 }
-                const total_students = count_result[0].total;
+                const cResult = count_result as { total: number }[];
+                const total_students = cResult[0].total;
                 const total_pages = Math.ceil(total_students / Number(limit));
                 return resolve(
                     NextResponse.json({
-                        data: results,
+                        data: students,
                         total: total_students,
                         page: Number(page),
                         limit: Number(limit),
