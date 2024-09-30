@@ -24,6 +24,7 @@ export async function DELETE(request: Request) {
         if (results.affectedRows == 0) {
             return NextResponse.json({ error: "No student found with the given id" }, { status: 404 });
         }
+        return NextResponse.json({message:"Student deleted successfully"},{status:200})
     } catch (error) {
         console.error('Unexpected error:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });

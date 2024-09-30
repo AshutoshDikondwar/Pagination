@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+
 interface Student {
     student_id: number;
     name: string;
@@ -21,19 +22,24 @@ interface GetStudentsProps {
 }
 
 const GetStudents = ({ refreshKey }: GetStudentsProps) => {
+
     const [students, setStudents] = useState<Student[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [currentPage, setCurrentPage] = useState(1);
-    const [nameSearch, setNameSearch] = useState('');
-    const [addressSearch, setAddressSearch] = useState('');
+    const [keySearch, setKeySearch] = useState('');
+    const [pageSize, setPageSize] = useState(3);
+
 
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [editName, setEditName] = useState('');
     const [editAddress, setEditAddress] = useState('');
 
+    const [deleteStudentId, setDeleteStudentId] = useState<number | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
     const fetchStudents = async (page: number = 1) => {
         try {
-            const response = await fetch(`/api/student?page=${page}&limit=3&name=${nameSearch}&address=${addressSearch}`);
+            const response = await fetch(`/api/student?page=${page}&limit=${pageSize}&keyword=${keySearch}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch students');
             }
@@ -42,13 +48,13 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
             setTotalPages(result.total_pages);
             setCurrentPage(result.page);
         } catch (err) {
-            alert(err||'Error getting Students');
+            alert(err || 'Error getting Students');
         }
     };
 
     useEffect(() => {
         fetchStudents(currentPage);
-    }, [currentPage, refreshKey, nameSearch, addressSearch]);
+    }, [currentPage, refreshKey, keySearch, pageSize]);
 
     const handlePageChange = (newPage: number) => {
         if (newPage > 0 && newPage <= totalPages) {
@@ -56,24 +62,41 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
         }
     };
 
-    const handleDelete = async (student_id: number) => {
+    const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setPageSize(Number(e.target.value));
+        setCurrentPage(1);
+    };
+
+    const handleDeleteModal = (student_id: number) => {
+        setDeleteStudentId(student_id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (deleteStudentId === null) return;
+
         try {
-            const response = await fetch(`/api/student/${student_id}`, {
+            const response = await fetch(`/api/student/${deleteStudentId}`, {
                 method: "DELETE",
             });
-            fetchStudents(currentPage);
-            if(response.ok){
-                alert("Deleted successfully")
+            if (response.ok) {
+                alert("Deleted successfully");
+                fetchStudents(currentPage);
+            } else {
+                throw new Error("Failed to delete student");
             }
         } catch (err) {
-            console.log(err ||"Error in deleting data");
+            console.error(err || "Error in deleting data");
+        } finally {
+            setShowDeleteModal(false);
+            setDeleteStudentId(null);
         }
     };
 
     const handleEdit = (student: Student) => {
-        setEditingStudent(student); 
-        setEditName(student.name); 
-        setEditAddress(student.address); 
+        setEditingStudent(student);
+        setEditName(student.name);
+        setEditAddress(student.address);
     };
 
     const handleUpdate = async (e: React.FormEvent) => {
@@ -93,8 +116,8 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                 throw new Error('Failed to update student');
             }
             alert("Student updated successfully");
-            setEditingStudent(null); 
-            fetchStudents(currentPage); 
+            setEditingStudent(null);
+            fetchStudents(currentPage);
         } catch (err) {
             alert(err || 'An error occurred while updating the student');
         }
@@ -107,18 +130,21 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
             <div className="mb-4">
                 <input
                     type="text"
-                    placeholder="Search by name"
-                    value={nameSearch}
-                    onChange={(e) => setNameSearch(e.target.value)}
+                    placeholder="Search..."
+                    value={keySearch}
+                    onChange={(e) => setKeySearch(e.target.value)}
                     className="border rounded px-3 py-2 mr-2"
                 />
-                <input
-                    type="text"
-                    placeholder="Search by address"
-                    value={addressSearch}
-                    onChange={(e) => setAddressSearch(e.target.value)}
-                    className="border rounded px-3 py-2"
-                />
+
+                <select
+                    value={pageSize}
+                    onChange={handlePageSizeChange}
+                    className="border rounded px-3 py-2 ml-2"
+                >
+                    <option value={3}>3</option>
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                </select>
             </div>
 
             <table className="min-w-full border-collapse border border-gray-300">
@@ -144,7 +170,7 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                                     Edit
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(student.student_id)}
+                                    onClick={() => handleDeleteModal(student.student_id)}
                                     className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700"
                                 >
                                     Delete
@@ -201,13 +227,45 @@ const GetStudents = ({ refreshKey }: GetStudentsProps) => {
                             />
                         </div>
 
-                        <button
-                            type="submit"
-                            className="w-full bg-green-600 text-white font-bold py-2 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-                        >
-                            Update Student
-                        </button>
+                        <div className="flex justify-end">
+                            <button
+                                type="submit"
+                                className="bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 mr-2"
+                            >
+                                Update Student
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEditingStudent(null)}
+                                className="bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </form>
+                </div>
+            )}
+
+            {showDeleteModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg">
+                        <h3 className="text-lg font-bold mb-4">Confirm Deletion</h3>
+                        <p className="mb-4">Are you sure you want to delete this student?</p>
+                        <div className="flex justify-end">
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 mr-2"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

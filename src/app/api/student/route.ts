@@ -15,10 +15,8 @@ export async function POST(request: Request) {
             console.log('Data inserted', results);
             return resolve(results);
         })
-        return NextResponse.json({ message: 'Student added successfully', id: results.insertId }, { status: 201 })
-
-
     })
+    return NextResponse.json({ message: 'Student added successfully', id: results.insertId }, { status: 201 })
 }
 
 export async function GET(request: Request) {
@@ -26,27 +24,22 @@ export async function GET(request: Request) {
     const page = searchParams.get('page') ?? '1';
     const limit = searchParams.get('limit') ?? '5';
 
-    const name = searchParams.get('name');
-    const address = searchParams.get('address');
-
-    const offset = (Number(page) - 1) * Number(limit);
+    const keyword = searchParams.get('keyword');
+   
+    const offset = Math.abs((Number(page) - 1) * Number(limit));
 
     const students = await new Promise((resolve, reject) => {
         let query = 'select * from students';
         const queryParams: Array<string | number> = [];
 
-        if (name || address) {
+        if (keyword) {
             query += ' WHERE';
             const conditions: string[] = [];
-            if (name) {
-                conditions.push('name LIKE ?');
-                queryParams.push(`%${name}%`);
-            }
-
-            if (address) {
-                conditions.push('address LIKE ?');
-                queryParams.push(`%${address}%`);
-            }
+           
+            conditions.push('name LIKE ?');
+            queryParams.push(`%${keyword}%`);
+            conditions.push('address LIKE ?');
+            queryParams.push(`%${keyword}%`);
 
             query += ' ' + conditions.join(' OR ');
         }
@@ -67,19 +60,14 @@ export async function GET(request: Request) {
         let totalQuery = 'select count(student_id) as total from students';
         const countParams: Array<string | number> = [];
 
-        if (name || address) {
+        if (keyword) {
             totalQuery += ' WHERE';
             const countConditions: string[] = [];
 
-            if (name) {
-                countConditions.push('name LIKE ?');
-                countParams.push(`%${name}%`);
-            }
-
-            if (address) {
-                countConditions.push('address LIKE ?');
-                countParams.push(`%${address}%`);
-            }
+            countConditions.push('name LIKE ?');
+            countParams.push(`%${keyword}%`);
+            countConditions.push('address LIKE ?');
+            countParams.push(`%${keyword}%`);
 
             totalQuery += ' ' + countConditions.join(' OR ');
         }
