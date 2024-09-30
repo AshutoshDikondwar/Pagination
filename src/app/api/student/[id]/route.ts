@@ -1,6 +1,3 @@
-
-
-
 import { NextResponse } from 'next/server';
 import db from '../../../config/db';
 import mysql, { ResultSetHeader } from 'mysql2';
@@ -42,21 +39,19 @@ export async function PUT(request: Request) {
     const id = url.pathname.split('/').pop();
     const { name, address } = await request.json();
 
-    return new Promise((resolve) => {
-        const query = 'update students set name = ?, address = ? WHERE student_id = ?';
+    const query = 'update students set name = ?, address = ? WHERE student_id = ?';
+    const results: ResultSetHeader = await new Promise((resolve, reject) => {
         db.query(query, [name, address, id], (err: mysql.QueryError | null, results: ResultSetHeader) => {
-
             if (err) {
-                console.error('Error updating data:', err);
-                return resolve(NextResponse.json({ error: 'Failed to update data' }, { status: 500 }));
+                return reject(err);
             }
-            if (results.affectedRows === 0) {
-                return resolve(NextResponse.json({ error: 'No student found with the given id' }, { status: 404 }));
-            }
-            console.log('Data updated', results);
-            return resolve(NextResponse.json({ message: 'Student updated successfully' }, { status: 200 }));
-
+            resolve(results);
         })
+       
     })
+    if(results.affectedRows===0){
+        return NextResponse.json({error:"No student found with the given id"},{status:404});
+    }
+    return NextResponse.json({message:"Student added successfully"},{status:200})
 
 }
